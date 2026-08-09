@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-_ROOT = Path(__file__).resolve().parents[3]  # repo root
+_ROOT = Path(__file__).resolve().parents[2]  # repo root
 
 
 def load_config(path: str | Path | None = None) -> dict:
