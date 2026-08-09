@@ -21,6 +21,7 @@ dependencies = [
     "pyyaml>=6.0",                    # YAML config files
     "pandas>=2.0",                    # Data loading and normalization
     "numpy>=1.26",                    # Numeric ops
+    "tiktoken>=0.7",                  # Token counting for chunk splitting
 
     # Testing
     "pytest>=8.0",
