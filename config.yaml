@@ -51,7 +51,28 @@ reranking:
   model: "rerank-english-v4.0"
 
 # -------------------------------------------------------------------
-# Generation
+# Synthetic data generation (OpenRouter + Llama 70B)
+# -------------------------------------------------------------------
+synthetic:
+  model: "meta-llama/llama-3.3-70b-instruct"
+  n_documents:
+    ncr: 150
+    ecr: 100
+    supplier_audit: 100
+    corrective_action: 100
+    incident_report: 50
+
+  # Sampling parameters — Option A tuning
+  # temperature: lower = more consistent field values, higher = more narrative variety
+  # We use different values per doc type intentionally
+  sampling:
+    temperature: 0.8        # enough variety to avoid repetition across 500 docs
+    top_p: 0.92             # slightly constrained vocab keeps domain language authentic
+    frequency_penalty: 0.4  # penalise reusing the same phrases across documents
+    max_tokens: 800         # enough for a full narrative without runaway generation
+
+# -------------------------------------------------------------------
+# Generation (Anthropic — RAG answer generation, Step 10)
 # -------------------------------------------------------------------
 generation:
   model: "claude-sonnet-4-6"
