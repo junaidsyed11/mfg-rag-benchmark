@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+dist/
+.ruff_cache/
+
+# Env / secrets
+.env
+
+# Data (raw files can be large)
+data/raw/
+data/synthetic/*.jsonl
+
+# Chroma persisted index
+chroma_db/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
