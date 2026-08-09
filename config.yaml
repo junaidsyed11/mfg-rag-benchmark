@@ -1,0 +1,66 @@
+# -------------------------------------------------------------------
+# Embedding
+# -------------------------------------------------------------------
+embedding:
+  # Switch between "cohere-v4" and "cohere-v3" to run each benchmark leg
+  backend: "cohere-v4"
+
+  models:
+    cohere-v4: "embed-english-v4.0"
+    cohere-v3: "embed-english-v3.0"
+
+  # Cohere requires declaring whether text is a document being indexed
+  # or a query being searched — affects how the model encodes it
+  input_type:
+    document: "search_document"
+    query: "search_query"
+
+# -------------------------------------------------------------------
+# Chunking
+# -------------------------------------------------------------------
+chunking:
+  # How many tokens per chunk. 512 is a reasonable starting point for
+  # dense technical docs — we will tune this in the eval step.
+  chunk_size: 512
+
+  # How many tokens overlap between consecutive chunks.
+  # Overlap prevents a sentence being cut in half across chunk boundaries.
+  chunk_overlap: 64
+
+# -------------------------------------------------------------------
+# Retrieval
+# -------------------------------------------------------------------
+retrieval:
+  # How many candidates to pull from dense + sparse before fusion
+  top_k: 20
+
+  # RRF k constant — controls how much early ranks are rewarded.
+  # 60 is the standard default from the original RRF paper.
+  rrf_k: 60
+
+  # How many fused candidates to pass to the reranker
+  rerank_top_n: 20
+
+  # How many final results to return to the generation step
+  final_top_k: 5
+
+# -------------------------------------------------------------------
+# Reranking
+# -------------------------------------------------------------------
+reranking:
+  model: "rerank-english-v4.0"
+
+# -------------------------------------------------------------------
+# Generation
+# -------------------------------------------------------------------
+generation:
+  model: "claude-sonnet-4-6"
+  max_tokens: 1024
+
+# -------------------------------------------------------------------
+# Paths
+# -------------------------------------------------------------------
+paths:
+  synthetic_data: "data/synthetic"
+  raw_data: "data/raw"
+  chroma_db: "chroma_db"
