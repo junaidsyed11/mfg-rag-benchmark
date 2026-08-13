@@ -15,11 +15,15 @@ embedder enforces the distinction through separate methods.
 
 from __future__ import annotations
 
+import time
+
 import cohere
+from cohere.errors import TooManyRequestsError
 
 from rag.config import get_api_key, load_config
 
 _BATCH_SIZE = 96  # Cohere max texts per request
+_RETRY_WAIT = 61  # seconds to wait after a 429 (trial limit resets per minute)
 
 
 class CohereEmbedder:
@@ -35,17 +39,26 @@ class CohereEmbedder:
         self.input_type_doc = input_type_doc
         self.input_type_query = input_type_query
 
+    def _embed_batch(self, batch: list[str], input_type: str) -> list[list[float]]:
+        """Embed one batch with retry on rate limit."""
+        while True:
+            try:
+                response = self.co.embed(
+                    texts=batch,
+                    model=self.model,
+                    input_type=input_type,
+                    embedding_types=["float"],
+                )
+                return list(response.embeddings.float_)
+            except TooManyRequestsError:
+                print(f"\n  Rate limit hit — waiting {_RETRY_WAIT}s ...", flush=True)
+                time.sleep(_RETRY_WAIT)
+
     def _embed(self, texts: list[str], input_type: str) -> list[list[float]]:
         all_vectors: list[list[float]] = []
         for i in range(0, len(texts), _BATCH_SIZE):
             batch = texts[i : i + _BATCH_SIZE]
-            response = self.co.embed(
-                texts=batch,
-                model=self.model,
-                input_type=input_type,
-                embedding_types=["float"],
-            )
-            all_vectors.extend(response.embeddings.float_)
+            all_vectors.extend(self._embed_batch(batch, input_type))
         return all_vectors
 
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
