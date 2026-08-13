@@ -72,10 +72,10 @@ synthetic:
     max_tokens: 800         # enough for a full narrative without runaway generation
 
 # -------------------------------------------------------------------
-# Generation (Anthropic — RAG answer generation, Step 10)
+# Generation (Claude via OpenRouter — RAG answer generation, Step 10)
 # -------------------------------------------------------------------
 generation:
-  model: "claude-sonnet-4-6"
+  model: "anthropic/claude-sonnet-4-6"
   max_tokens: 1024
 
 # -------------------------------------------------------------------

@@ -42,59 +42,68 @@ def test_format_context_handles_missing_supplier():
 # ClaudeGenerator
 # ---------------------------------------------------------------------------
 
-def _generator() -> ClaudeGenerator:
-    with patch("rag.generator.anthropic.Anthropic"):
-        return ClaudeGenerator(
-            model="claude-sonnet-4-6",
-            max_tokens=1024,
-            api_key="test-key",
-        )
-
-
 def _mock_response(text: str):
-    content = MagicMock()
-    content.text = text
     resp = MagicMock()
-    resp.content = [content]
+    resp.raise_for_status = MagicMock()
+    resp.json.return_value = {
+        "choices": [{"message": {"content": text}}]
+    }
     return resp
+
+
+def _generator() -> ClaudeGenerator:
+    return ClaudeGenerator(
+        model="anthropic/claude-sonnet-4-6",
+        max_tokens=1024,
+        api_key="test-key",
+    )
 
 
 def test_generate_returns_string():
     g = _generator()
-    g.client.messages.create.return_value = _mock_response("The answer is X.")
-    chunks = [{"doc_id": "NCR-001", "doc_type": "NCR",
-               "document": "Porosity found.", "supplier": "Apex"}]
-    result = g.generate("What defects were found?", chunks)
-    assert isinstance(result, str)
+    with patch("rag.generator.requests.post", return_value=_mock_response("The answer is X.")):
+        chunks = [{"doc_id": "NCR-001", "doc_type": "NCR",
+                   "document": "Porosity found.", "supplier": "Apex"}]
+        result = g.generate("What defects were found?", chunks)
     assert result == "The answer is X."
 
 
 def test_generate_empty_chunks_returns_no_docs_message():
     g = _generator()
-    result = g.generate("any query", [])
+    with patch("rag.generator.requests.post") as mock_post:
+        result = g.generate("any query", [])
     assert "No relevant documents" in result
-    g.client.messages.create.assert_not_called()
+    mock_post.assert_not_called()
 
 
-def test_generate_passes_query_in_message():
+def test_generate_passes_query_in_request():
     g = _generator()
-    g.client.messages.create.return_value = _mock_response("answer")
-    g.generate("find all porosity NCRs", [
-        {"doc_id": "X", "doc_type": "NCR", "document": "text", "supplier": ""}
-    ])
-    call_kwargs = g.client.messages.create.call_args.kwargs
-    user_content = call_kwargs["messages"][0]["content"]
+    with patch("rag.generator.requests.post", return_value=_mock_response("ans")) as mock_post:
+        g.generate("find all porosity NCRs", [
+            {"doc_id": "X", "doc_type": "NCR", "document": "text", "supplier": ""}
+        ])
+    payload = mock_post.call_args.kwargs["json"]
+    user_content = payload["messages"][1]["content"]
     assert "find all porosity NCRs" in user_content
 
 
-def test_generate_uses_system_prompt():
+def test_generate_includes_system_prompt():
     g = _generator()
-    g.client.messages.create.return_value = _mock_response("answer")
-    g.generate("query", [{"doc_id": "X", "doc_type": "NCR",
-                          "document": "text", "supplier": ""}])
-    call_kwargs = g.client.messages.create.call_args.kwargs
-    assert "system" in call_kwargs
-    assert len(call_kwargs["system"]) > 0
+    with patch("rag.generator.requests.post", return_value=_mock_response("ans")) as mock_post:
+        g.generate("query", [{"doc_id": "X", "doc_type": "NCR",
+                               "document": "text", "supplier": ""}])
+    payload = mock_post.call_args.kwargs["json"]
+    assert payload["messages"][0]["role"] == "system"
+    assert len(payload["messages"][0]["content"]) > 0
+
+
+def test_generate_uses_openrouter_url():
+    g = _generator()
+    with patch("rag.generator.requests.post", return_value=_mock_response("ans")) as mock_post:
+        g.generate("query", [{"doc_id": "X", "doc_type": "NCR",
+                               "document": "text", "supplier": ""}])
+    url = mock_post.call_args.args[0]
+    assert "openrouter.ai" in url
 
 
 # ---------------------------------------------------------------------------
@@ -102,8 +111,7 @@ def test_generate_uses_system_prompt():
 # ---------------------------------------------------------------------------
 
 def test_get_generator_reads_config():
-    cfg = {"generation": {"model": "claude-sonnet-4-6", "max_tokens": 512}}
-    with patch("rag.generator.anthropic.Anthropic"):
-        g = get_generator(cfg=cfg, api_key="test")
-    assert g.model_name == "claude-sonnet-4-6"
+    cfg = {"generation": {"model": "anthropic/claude-sonnet-4-6", "max_tokens": 512}}
+    g = get_generator(cfg=cfg, api_key="test")
+    assert g.model_name == "anthropic/claude-sonnet-4-6"
     assert g.max_tokens == 512

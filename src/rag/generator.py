@@ -1,20 +1,22 @@
 """
-Claude generation step.
+Claude generation step via OpenRouter.
 
 Takes a query and the top-k reranked chunks, formats them as context,
-and calls Claude to generate a grounded answer. Answers are sourced
-only from the provided context — the prompt explicitly instructs Claude
-not to use outside knowledge, which keeps the system honest and makes
-evaluation meaningful.
+and calls Claude through OpenRouter to generate a grounded answer.
+Answers are sourced only from the provided context — the prompt explicitly
+instructs Claude not to use outside knowledge, keeping evaluation honest.
 """
 
 from __future__ import annotations
 
 from typing import Any
 
-import anthropic
+import requests
 
 from rag.config import get_api_key, load_config
+
+_OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+_REFERER = "https://github.com/junaidsyed11/mfg-rag-benchmark"
 
 _SYSTEM_PROMPT = """\
 You are a quality engineering assistant for an aerospace manufacturing company.
@@ -43,9 +45,9 @@ def _format_context(chunks: list[dict[str, Any]]) -> str:
 
 class ClaudeGenerator:
     def __init__(self, model: str, max_tokens: int, api_key: str) -> None:
-        self.client = anthropic.Anthropic(api_key=api_key)
         self.model = model
         self.max_tokens = max_tokens
+        self._api_key = api_key
 
     def generate(self, query: str, chunks: list[dict[str, Any]]) -> str:
         """Generate an answer grounded in the provided chunks."""
@@ -55,13 +57,25 @@ class ClaudeGenerator:
         context = _format_context(chunks)
         user_message = f"CONTEXT:\n{context}\n\nQUESTION: {query}"
 
-        message = self.client.messages.create(
-            model=self.model,
-            max_tokens=self.max_tokens,
-            system=_SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": user_message}],
+        response = requests.post(
+            _OPENROUTER_URL,
+            headers={
+                "Authorization": f"Bearer {self._api_key}",
+                "Content-Type": "application/json",
+                "HTTP-Referer": _REFERER,
+            },
+            json={
+                "model": self.model,
+                "messages": [
+                    {"role": "system", "content": _SYSTEM_PROMPT},
+                    {"role": "user", "content": user_message},
+                ],
+                "max_tokens": self.max_tokens,
+            },
+            timeout=60,
         )
-        return message.content[0].text
+        response.raise_for_status()
+        return response.json()["choices"][0]["message"]["content"].strip()
 
     @property
     def model_name(self) -> str:
@@ -73,7 +87,7 @@ def get_generator(cfg: dict | None = None, api_key: str | None = None) -> Claude
     if cfg is None:
         cfg = load_config()
     if api_key is None:
-        api_key = get_api_key("ANTHROPIC_API_KEY")
+        api_key = get_api_key("OPENROUTER_API_KEY")
 
     return ClaudeGenerator(
         model=cfg["generation"]["model"],
