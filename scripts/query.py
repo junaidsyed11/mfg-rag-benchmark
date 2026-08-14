@@ -64,9 +64,10 @@ def run_pipeline(query: str, cfg: dict, top_k: int | None, generate: bool) -> No
     print(f"TOP {len(results)} CHUNKS")
     print(f"{'─'*60}")
     for i, r in enumerate(results, 1):
-        doc_id = r.get("doc_id", "?")
-        doc_type = r.get("doc_type", "?")
-        supplier = r.get("supplier", "")
+        meta = r.get("metadata") or {}
+        doc_id = r.get("doc_id") or meta.get("doc_id", "?")
+        doc_type = r.get("doc_type") or meta.get("doc_type", "?")
+        supplier = r.get("supplier") or meta.get("supplier", "")
         score = r.get("rerank_score", 0)
         print(f"\n[{i}] {doc_id} ({doc_type}{' · ' + supplier if supplier else ''})")
         print(f"    Rerank score: {score:.4f}")
