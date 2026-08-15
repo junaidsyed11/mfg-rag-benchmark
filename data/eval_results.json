@@ -1,0 +1,20 @@
+{
+  "k": 5,
+  "reranker": true,
+  "results": {
+    "cohere-v3": {
+      "hit_rate": 0.8889,
+      "mrr": 0.7389,
+      "ndcg": 0.6234,
+      "k": 5,
+      "n_queries": 27
+    },
+    "cohere-v4": {
+      "hit_rate": 0.0,
+      "mrr": 0.0,
+      "ndcg": 0.0,
+      "k": 5,
+      "n_queries": 0
+    }
+  }
+}
