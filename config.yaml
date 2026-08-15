@@ -3,7 +3,7 @@
 # -------------------------------------------------------------------
 embedding:
   # Switch between "cohere-v4" and "cohere-v3" to run each benchmark leg
-  backend: "cohere-v4"
+  backend: "cohere-v3"
 
   models:
     cohere-v4: "embed-english-v4.0"
@@ -48,7 +48,7 @@ retrieval:
 # Reranking
 # -------------------------------------------------------------------
 reranking:
-  model: "rerank-english-v4.0"
+  model: "rerank-v4.0-fast"
 
 # -------------------------------------------------------------------
 # Synthetic data generation (OpenRouter + Llama 70B)
@@ -72,7 +72,7 @@ synthetic:
     max_tokens: 800         # enough for a full narrative without runaway generation
 
 # -------------------------------------------------------------------
-# Generation (Claude via OpenRouter — RAG answer generation, Step 10)
+# Generation (Claude via OpenRouter)
 # -------------------------------------------------------------------
 generation:
   model: "anthropic/claude-sonnet-4-6"

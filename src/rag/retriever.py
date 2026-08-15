@@ -1,9 +1,9 @@
 """
 Hybrid retriever — dense (ChromaDB) + sparse (BM25).
 
-Returns two ranked candidate lists per query. RRF fusion (Step 8) merges
-them into a single ranked list. Keeping the two retrievers separate here
-makes it easy to inspect which results came from which source.
+Returns two ranked candidate lists per query. RRF fusion merges them into
+a single ranked list. Keeping the two retrievers separate makes it easy to
+inspect which results came from which source.
 
 Result dicts from both retrievers share the same schema:
   id        — chunk ID (<doc_id>_c<chunk_index>)
